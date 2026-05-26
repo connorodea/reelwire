@@ -1,0 +1,57 @@
+# dependencies
+node_modules
+.pnpm-store
+
+# next.js
+.next
+out
+
+# production
+build
+dist
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env
+.env*.local
+.env.production
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# remotion / ffmpeg artifacts
+renders/
+out.mp4
+*.mp4
+!src/**/*.mp4
+
+# uploaded media (local dev)
+uploads/
+
+# prisma
+prisma/migrations/dev*
+
+# sentry
+.sentryclirc
+
+# scrape.do cache (dev)
+.cache/
+
+# logs
+*.log
+
+# editor
+.idea
+.vscode/settings.json
