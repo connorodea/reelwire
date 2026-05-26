@@ -1,0 +1,61 @@
+{
+  "search_parameters": {
+    "engine": "google_news",
+    "q": "openai",
+    "google_domain": "google.com",
+    "hl": "en",
+    "gl": "us"
+  },
+  "title": "openai - Google News",
+  "news_results": [
+    {
+      "position": 1,
+      "title": "OpenAI launches new model with longer context window",
+      "link": "https://techcrunch.com/2026/05/25/openai-new-model",
+      "source": {
+        "name": "TechCrunch",
+        "title": "TechCrunch",
+        "icon": "https://logo.example.com/techcrunch.png",
+        "authors": ["Jane Doe"]
+      },
+      "date": "2 hours ago",
+      "iso_date": "2026-05-26T12:00:00Z",
+      "thumbnail": "https://img.example.com/openai-1.jpg",
+      "thumbnail_small": "https://img.example.com/openai-1-sm.jpg",
+      "topic_token": "TOPIC_ABC",
+      "publication_token": "PUB_TC",
+      "story_token": "STORY_001"
+    },
+    {
+      "position": 2,
+      "title": "AI Roundup: OpenAI, Anthropic, Google",
+      "stories": [
+        {
+          "position": 1,
+          "title": "OpenAI partners with retailer X",
+          "link": "https://wsj.com/2026/05/25/openai-retailer-x",
+          "source": { "name": "WSJ", "icon": "https://logo.example.com/wsj.png" },
+          "date": "5 hours ago",
+          "iso_date": "2026-05-26T09:00:00Z",
+          "thumbnail": "https://img.example.com/cluster-1.jpg"
+        },
+        {
+          "position": 2,
+          "title": "Anthropic ships new Claude version",
+          "link": "https://theverge.com/2026/05/25/claude-ships",
+          "source": { "name": "The Verge", "icon": "https://logo.example.com/verge.png" },
+          "date": "6 hours ago",
+          "iso_date": "2026-05-26T08:00:00Z"
+        }
+      ],
+      "story_token": "STORY_CLUSTER_002"
+    },
+    {
+      "position": 3,
+      "title": "OpenAI valuation rumor",
+      "link": "https://bloomberg.com/2026/05/25/openai-valuation",
+      "source": { "name": "Bloomberg" },
+      "iso_date": "2026-05-26T07:00:00Z"
+    }
+  ]
+}
