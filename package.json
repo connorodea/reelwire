@@ -1,0 +1,58 @@
+{
+  "name": "reelwire",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The newswire that ships reels — automated YouTube videos from live news",
+  "scripts": {
+    "dev": "next dev -p 3040",
+    "build": "prisma generate && next build",
+    "start": "next start -p 3040",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "worker": "tsx worker/index.ts",
+    "worker:prod": "node --import tsx worker/index.ts",
+    "remotion:studio": "remotion studio remotion/index.ts",
+    "remotion:render": "remotion render remotion/index.ts NewsReel out.mp4",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@deepgram/sdk": "^5.3.0",
+    "@prisma/client": "^5.22.0",
+    "@remotion/bundler": "^4.0.225",
+    "@remotion/cli": "^4.0.225",
+    "@remotion/renderer": "^4.0.225",
+    "@sentry/nextjs": "^10.53.1",
+    "@sentry/node": "^10.53.1",
+    "bullmq": "^5.36.0",
+    "dotenv": "^16.4.7",
+    "googleapis": "^144.0.0",
+    "ioredis": "^5.4.1",
+    "next": "14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.225",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitest/expect": "^4.1.7",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "14.2.35",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.7"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
