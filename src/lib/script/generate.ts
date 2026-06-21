@@ -1,9 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { extractJson } from "../shared/json";
+import type { VideoFormat } from "../shared/format";
 
-/** Matches the Prisma `Format` enum (vertical = Shorts, horizontal = long-form). */
-export type VideoFormat = "VERTICAL_9_16" | "HORIZONTAL_16_9" | "SQUARE_1_1";
+export type { VideoFormat };
 
 /** Minimal story shape the writer needs (a subset of the `Story` model). */
 export interface ScriptStory {

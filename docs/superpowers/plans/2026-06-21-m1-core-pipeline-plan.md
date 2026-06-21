@@ -60,10 +60,13 @@ step, excluded from the unit gate like `env`/`db`. The v5 SDK is Fern-generated 
 deeply nested shape (`speak/v1/audio`, `listen/v1/media`); faking it in unit tests would
 be brittle and dishonest, so the pure orchestration logic is gated instead.
 
-### Step 3 — Caption builder · `src/lib/captions/`
-`buildCaptions(words, { format })` → `CaptionCue[]` (chunked: dense 2–4-word cues for
-shorts, line-level for long). Pure logic. **Tests:** chunking rules per format, gap
-handling, empty input.
+### ✅ Step 3 — Caption builder · `src/lib/captions/` (DONE 2026-06-21)
+`buildCaptions(words, { format, maxWords?, gapThresholdSec? })` → `CaptionCue[]`
+(`text`/`start`/`end`/`words`). Consumes Step 2's `WordTiming[]`. A cue flushes on the
+word limit (short = 3, long = 7), a sentence-ending `.?!`, or a pause longer than the
+gap threshold (short 0.5s / long 0.7s). Pure logic. Also lifted the canonical
+`VideoFormat` + `isShortFormat` into `src/lib/shared/format.ts` (script now re-exports
+it). **7 caption + 2 format tests; gate 100%.**
 
 ### Step 4 — Storage adapter (R2 / S3) · `src/lib/storage/`
 `putObject` / `getSignedUrl` via injectable S3 client. **Sign only headers the browser
