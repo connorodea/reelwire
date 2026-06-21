@@ -35,13 +35,15 @@ unit-testable with a fake — no network in tests.
 Added `@vitest/coverage-v8`, aligned vitest to 4.1.9, wrote the gate, brought
 `score-claude.ts` and `scrape-do/client.ts` to 100%. 42 tests, gate green, typecheck clean.
 
-### Step 1 — Script generator · `src/lib/script/`
-`generateScript({ story, channel, format }, { client })` → `ScriptDraft`
-(`title`, `hook`, `segments[]`, `cta`, `description`, `tags[]`). Format-aware:
-`short` = 1 punchy idea, ~120–150 words; `long` = multi-segment, 1100–1600 words with
-mid-roll CTA marker. Injectable Anthropic client; tolerant JSON extraction (reuse the
-`extractJson` approach). **Tests:** both formats, CTA injection from channel config,
-empty/garbage model output, custom model.
+### ✅ Step 1 — Script generator · `src/lib/script/` (DONE 2026-06-21)
+`generateScript({ story, channel, format }, { client })` → `ScriptDraft` mapped 1:1 onto
+the `Script` model (`hook`/`body`/`cta`/`thumbnailPrompt`/`videoTitle`/`videoDesc`/
+`videoTags`/`model`/`tokensIn`/`tokensOut`). Format-aware via the Prisma `Format` enum
+(`VERTICAL_9_16`/`SQUARE_1_1` = short ~120–150 words; `HORIZONTAL_16_9` = long 1100–1600
+words + mid-roll CTA). Channel `ctaSnippet` injected into cta + description (de-duped).
+Tolerant JSON extraction factored into `src/lib/shared/json.ts` (own tests; `score-claude`
+can migrate to it later). Injected Anthropic client (`defaultAnthropic()` at the root).
+**13 generator + 7 json tests; gate 100%.**
 
 ### Step 2 — TTS adapter (Deepgram Aura) · `src/lib/tts/`
 `synthesize(text, { client, voice })` → `{ audio: Uint8Array, words: WordTiming[] }`.
