@@ -68,10 +68,18 @@ gap threshold (short 0.5s / long 0.7s). Pure logic. Also lifted the canonical
 `VideoFormat` + `isShortFormat` into `src/lib/shared/format.ts` (script now re-exports
 it). **7 caption + 2 format tests; gate 100%.**
 
-### Step 4 — Storage adapter (R2 / S3) · `src/lib/storage/`
-`putObject` / `getSignedUrl` via injectable S3 client. **Sign only headers the browser
-replays** (see `feedback_r2_presign_only_sign_browser_headers`). **Tests:** key layout,
-content-type, presign signed-headers, error surface.
+### ✅ Step 4 — Storage adapter (R2 / S3) · `src/lib/storage/` (DONE 2026-06-21)
+`createStorageService(store, { publicBaseUrl })` → `{ keyFor, publicUrl, put, signedUrl }`
+over an injected `ObjectStore` port. Deterministic key layout
+(`tenants/{t}/channels/{c}/videos/{v}/{artifact}.{ext}`), per-artifact content-type
+(audio/video/thumbnail/captions), trailing-slash-safe public URLs, default 1h signed-GET
+expiry. **5 tests; gate 100%.**
+
+⏳ **Deferred (integration boundary):** the concrete R2 port impl
+(`@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`, `src/lib/storage/r2.ts`) — added
++ smoke-tested in the adapter-wiring step. When the web app later needs browser-PUT
+presigning, **sign only headers the browser replays** (Content-Type, never
+Content-Disposition) — see `feedback_r2_presign_only_sign_browser_headers`.
 
 ### Step 5 — Render driver · `src/lib/render/`
 `buildRenderInput({ script, audioUrl, captions, format })` → Remotion input props +
