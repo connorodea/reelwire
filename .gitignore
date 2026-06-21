@@ -55,3 +55,6 @@ prisma/migrations/dev*
 # editor
 .idea
 .vscode/settings.json
+
+# test coverage output
+coverage/
