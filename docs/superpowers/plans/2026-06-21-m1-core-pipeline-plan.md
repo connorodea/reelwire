@@ -45,10 +45,20 @@ Tolerant JSON extraction factored into `src/lib/shared/json.ts` (own tests; `sco
 can migrate to it later). Injected Anthropic client (`defaultAnthropic()` at the root).
 **13 generator + 7 json tests; gate 100%.**
 
-### Step 2 — TTS adapter (Deepgram Aura) · `src/lib/tts/`
-`synthesize(text, { client, voice })` → `{ audio: Uint8Array, words: WordTiming[] }`.
-Injectable Deepgram client. **Tests:** maps SDK response → timings, voice override,
-empty text guard, error surface. (Use `deepgram:api` skill for the SDK contract.)
+### ✅ Step 2 — TTS adapter (Deepgram Aura) · `src/lib/tts/` (DONE 2026-06-21)
+`synthesize(text, deps, opts)` → `{ audio, words[], durationSec, voice, encoding,
+sampleRate }`. Key SDK fact: Deepgram TTS (`/v1/speak`) returns **audio only** — word
+timings need a second Nova STT pass (`/v1/listen`) over the generated audio. So the
+orchestrator drives two **injected ports** (`speak`, `transcribe`): empty-text guard,
+default voice `aura-asteria-en` / STT `nova-3` / `linear16` @ 24kHz, `punctuated_word`
+mapping, duration from last word end. **5 tests; gate 100%.**
+
+⏳ **Deferred (integration boundary):** the concrete `@deepgram/sdk` v5 wrapper that
+implements the `speak`/`transcribe` ports (`src/lib/tts/deepgram.ts`) — built and
+smoke-tested against the live API (needs `DEEPGRAM_API_KEY`) during the adapter-wiring
+step, excluded from the unit gate like `env`/`db`. The v5 SDK is Fern-generated with a
+deeply nested shape (`speak/v1/audio`, `listen/v1/media`); faking it in unit tests would
+be brittle and dishonest, so the pure orchestration logic is gated instead.
 
 ### Step 3 — Caption builder · `src/lib/captions/`
 `buildCaptions(words, { format })` → `CaptionCue[]` (chunked: dense 2–4-word cues for
