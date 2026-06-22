@@ -7,3 +7,11 @@ export {
   type RunPipelineArgs,
   type PipelineResult,
 } from "./run";
+export {
+  processVideoJob,
+  type JobRecord,
+  type JobStore,
+  type VideoJobPayload,
+  type ProcessVideoJobDeps,
+  type ProcessResult,
+} from "./job";

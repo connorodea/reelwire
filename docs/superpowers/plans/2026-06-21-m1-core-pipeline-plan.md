@@ -118,10 +118,17 @@ captionCount, status }`. **2 tests (happy wiring + failure); gate 100%.**
 _Idempotency note:_ deferred to the worker/queue layer (Step 8) — BullMQ job-id dedup is
 the right seam, not the pure orchestrator.
 
-### Step 8 — Worker wiring · `worker/`
-BullMQ queues/workers invoking the orchestrator; Prisma persistence. Unit-test the job
-handlers with fakes (queue + adapters injected). Integration smoke separate from the
-unit gate.
+### ✅ Step 8 — Job handler · `src/lib/pipeline/job.ts` (DONE 2026-06-21)
+`processVideoJob(payload, { store, ports })` — the idempotent, gated core of the worker.
+Skips already-`COMPLETED` jobs (job-id dedup seam), else wires `setStatus` to the
+`JobStore` and runs `runPipeline`, persisting each transition + recording the final
+`{ videoId, videoUrl }`. Failures propagate (queue retries) after the pipeline persists
+`FAILED`. **4 tests (idempotent skip, full run + persistence, failure, FAILED-retry);
+gate 100%.** (Lives in `src/lib/pipeline/` so it's inside the coverage gate; `worker/`
+is not in the `include`.)
+
+⏳ **Deferred (integration boundary):** `worker/index.ts` BullMQ Worker/Queue + the
+concrete Prisma `JobStore` impl — live Redis/Postgres, joins the adapter-wiring step.
 
 ### Step 9 — Channel config surface · `src/lib/channel/`
 Resolve per-channel niche/persona/voice/CTA/format-mix config (DB + `SystemSetting`
