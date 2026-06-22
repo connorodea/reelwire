@@ -81,11 +81,18 @@ expiry. **5 tests; gate 100%.**
 presigning, **sign only headers the browser replays** (Content-Type, never
 Content-Disposition) — see `feedback_r2_presign_only_sign_browser_headers`.
 
-### Step 5 — Render driver · `src/lib/render/`
-`buildRenderInput({ script, audioUrl, captions, format })` → Remotion input props +
-dimensions (`short` 1080×1920, `long` 1920×1080). Injectable renderer; unit-test props
-assembly, the renderer call is mocked. **Tests:** both aspect ratios, prop mapping,
-duration from audio, renderer invocation.
+### ✅ Step 5 — Render driver · `src/lib/render/` (DONE 2026-06-21)
+`buildRenderInput({ script, audioUrl, captions, format, durationSec, fps?, compositionId? })`
+→ `RenderInput` (`compositionId`/`width`/`height`/`fps`/`durationInFrames`/`props`).
+Dimensions per format (1080×1920 / 1920×1080 / 1080×1080), `durationInFrames =
+max(1, ceil(durationSec*fps))`, default 30fps + `NewsReel` composition, props assembled
+from the script + captions + audio URL. Typed `RenderPort` exposed for the orchestrator.
+**5 tests; gate 100%.**
+
+⏳ **Deferred (integration boundary):** the concrete `@remotion/renderer` impl of
+`RenderPort` (`src/lib/render/remotion.ts` — bundle + `renderMedia`) lands in the
+adapter-wiring step; the `NewsReel` composition (framework shell) is excluded from the
+unit gate.
 
 ### Step 6 — YouTube uploader · `src/lib/youtube/`
 `buildVideoMetadata({ script, channel, format })` + `upload(file, meta, { client })`
