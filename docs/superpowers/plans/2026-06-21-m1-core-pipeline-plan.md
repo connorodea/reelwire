@@ -164,11 +164,12 @@ injecting the SDK client and asserting request shapes** — NO live calls, no co
 keys. The truly live-only edges (Deepgram v5, Remotion render, BullMQ/Redis) wait for an
 interactive session. Order:
 
-- **Step A — R2 `ObjectStore` · `src/lib/storage/r2.ts`** (NEXT). `createR2ObjectStore({
-  client, getSignedUrl, bucket })` injecting the `@aws-sdk/client-s3` S3Client + the
-  `s3-request-presigner` `getSignedUrl` fn. Assert `client.send` gets a `PutObjectCommand`
-  with `{Bucket,Key,Body,ContentType}`; `presignGetUrl` calls `getSignedUrl(client,
-  GetObjectCommand, {expiresIn})`. Add deps `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`.
+- **✅ Step A — R2 `ObjectStore` · `src/lib/storage/r2.ts`** (DONE 2026-06-21).
+  `createR2ObjectStore({ client, bucket, presign })` — S3Client + presigner both injected
+  (no defaults → no untestable branch). `putObject` sends a `PutObjectCommand`
+  {Bucket,Key,Body,ContentType}; `presignGetUrl` calls `presign(client, GetObjectCommand,
+  {expiresIn})`. Deps `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner` added.
+  **2 tests asserting command shapes; gate 100%; no live S3 calls.**
 - **Step B — YouTube `YoutubePort` · `src/lib/youtube/google.ts`**. `createYoutubePort({
   client, openStream })` injecting the `googleapis` youtube client + a stream-opener.
   Assert `youtube.videos.insert` called with `{part, requestBody: metadata, media}`;
