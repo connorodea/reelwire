@@ -155,6 +155,30 @@ honestly unit-faked):
 - `worker/index.ts` — BullMQ Worker/Queue + concrete Prisma `JobStore`
 - a composition root that builds `PipelinePorts` from all the above + an integration smoke test
 
+---
+
+## Adapter track (2026-06-21 decision: loop continues, UNIT-TESTABLE adapters only)
+
+User chose to keep the loop running on adapters that can be **unit-tested to 100% by
+injecting the SDK client and asserting request shapes** — NO live calls, no cost, no
+keys. The truly live-only edges (Deepgram v5, Remotion render, BullMQ/Redis) wait for an
+interactive session. Order:
+
+- **Step A — R2 `ObjectStore` · `src/lib/storage/r2.ts`** (NEXT). `createR2ObjectStore({
+  client, getSignedUrl, bucket })` injecting the `@aws-sdk/client-s3` S3Client + the
+  `s3-request-presigner` `getSignedUrl` fn. Assert `client.send` gets a `PutObjectCommand`
+  with `{Bucket,Key,Body,ContentType}`; `presignGetUrl` calls `getSignedUrl(client,
+  GetObjectCommand, {expiresIn})`. Add deps `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`.
+- **Step B — YouTube `YoutubePort` · `src/lib/youtube/google.ts`**. `createYoutubePort({
+  client, openStream })` injecting the `googleapis` youtube client + a stream-opener.
+  Assert `youtube.videos.insert` called with `{part, requestBody: metadata, media}`;
+  returns `{ videoId: res.data.id }`.
+- **Step C — composition root · `src/lib/pipeline/wire.ts`**. Pure assembly of the stage
+  ports from adapter instances (unit-test with fakes that the right ports are wired).
+
+⏳ Still live-only (interactive session): Deepgram speak+Nova, Remotion renderer, BullMQ
+worker + Prisma `JobStore`.
+
 ## Definition of done per interval
 
 1. New/changed `src/lib/**` files at **100%** coverage (`pnpm test:coverage` green).
