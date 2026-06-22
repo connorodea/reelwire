@@ -106,10 +106,17 @@ returns the format-aware URL (`/shorts/{id}` vs `/watch?v={id}`) over an injecte
 (OAuth refresh-token → `youtube.videos.insert` resumable upload, `src/lib/youtube/google.ts`)
 lands in the adapter-wiring step.
 
-### Step 7 — Pipeline orchestrator · `src/lib/pipeline/`
-Pure function chaining scrape → rank → script → tts → captions → render → upload with
-injected adapters; emits `Job`/`Story`/`Script`/`Render`/`Upload` state transitions.
-**Tests:** happy path (both formats), per-stage failure → job state, idempotency.
+### ✅ Step 7 — Pipeline orchestrator · `src/lib/pipeline/` (DONE 2026-06-21)
+`runPipeline(args, ports)` chains the stages with status transitions:
+`SCRIPTING → generateScript → SYNTHESIZING → synthesize → buildCaptions → storeAudio →
+RENDERING → buildRenderInput → render → UPLOADING → buildVideoMetadata → upload →
+COMPLETED`. Side-effectful stages are injected `PipelinePorts`; the tested pure builders
+are called directly. Narration = hook + segment texts. Any stage failure → `setStatus
+("FAILED")` + rethrow. Returns `{ videoId, videoUrl, scriptTitle, durationSec,
+captionCount, status }`. **2 tests (happy wiring + failure); gate 100%.**
+
+_Idempotency note:_ deferred to the worker/queue layer (Step 8) — BullMQ job-id dedup is
+the right seam, not the pure orchestrator.
 
 ### Step 8 — Worker wiring · `worker/`
 BullMQ queues/workers invoking the orchestrator; Prisma persistence. Unit-test the job
