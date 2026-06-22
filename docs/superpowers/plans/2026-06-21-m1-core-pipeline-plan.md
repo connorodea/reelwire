@@ -94,11 +94,17 @@ from the script + captions + audio URL. Typed `RenderPort` exposed for the orche
 adapter-wiring step; the `NewsReel` composition (framework shell) is excluded from the
 unit gate.
 
-### Step 6 — YouTube uploader · `src/lib/youtube/`
-`buildVideoMetadata({ script, channel, format })` + `upload(file, meta, { client })`
-via injectable googleapis client. Description carries product/affiliate CTAs from
-channel config. **Tests:** metadata (title/desc/tags/category/privacy), CTA block,
-upload call shape, error surface.
+### ✅ Step 6 — YouTube uploader · `src/lib/youtube/` (DONE 2026-06-21)
+`buildVideoMetadata({ script, channel, format, privacyStatus? })` → `VideoMetadata`
+(snippet+status): 100-char title truncation, format-aware `#Shorts` append (de-duped),
+tags capped at 15, default category `22` + `private`. CTA already lives in
+`script.videoDesc` from step 1. `uploadVideo({ metadata, videoPath, format }, port)`
+returns the format-aware URL (`/shorts/{id}` vs `/watch?v={id}`) over an injected
+`YoutubePort`. **7 tests; gate 100%.**
+
+⏳ **Deferred (integration boundary):** the concrete `googleapis` impl of `YoutubePort`
+(OAuth refresh-token → `youtube.videos.insert` resumable upload, `src/lib/youtube/google.ts`)
+lands in the adapter-wiring step.
 
 ### Step 7 — Pipeline orchestrator · `src/lib/pipeline/`
 Pure function chaining scrape → rank → script → tts → captions → render → upload with
