@@ -130,9 +130,30 @@ is not in the `include`.)
 ⏳ **Deferred (integration boundary):** `worker/index.ts` BullMQ Worker/Queue + the
 concrete Prisma `JobStore` impl — live Redis/Postgres, joins the adapter-wiring step.
 
-### Step 9 — Channel config surface · `src/lib/channel/`
-Resolve per-channel niche/persona/voice/CTA/format-mix config (DB + `SystemSetting`
-defaults) that feeds steps 1, 5, 6. **Tests:** defaulting, override precedence.
+### ✅ Step 9 — Channel config surface · `src/lib/channel/` (DONE 2026-06-21)
+`resolveChannelConfig(channel, defaults?)` merges with 3-tier precedence (channel value →
+tenant default → hard default) into a `ResolvedChannelConfig` feeding steps 1/5/6.
+`parseChannelDefaults(settings)` turns untrusted `SystemSetting` string KV into typed,
+validated defaults (format/privacy enum-checked, fps positive-finite). **6 tests; gate 100%.**
+
+---
+
+## 🎉 All 9 gated-logic steps complete (2026-06-21)
+
+The entire M1 pipeline exists as fully-unit-tested logic at **100% coverage** (105 tests):
+`scrape → rank → script → tts → captions → storage → render-input → youtube →
+orchestrator → job-handler → channel-config`. Typecheck clean throughout.
+
+### Remaining before end-to-end run: the **adapter-wiring + live-smoke** step
+Every deferred integration boundary, batched (each needs real keys/services, can't be
+honestly unit-faked):
+- `src/lib/tts/deepgram.ts` — `@deepgram/sdk` speak + Nova transcribe ports
+- `src/lib/storage/r2.ts` — `@aws-sdk/client-s3` + presigner `ObjectStore`
+- `src/lib/render/remotion.ts` — `@remotion/renderer` `RenderPort` + the real `NewsReel` composition
+- `src/lib/youtube/google.ts` — `googleapis` OAuth → `videos.insert` `YoutubePort`
+- `src/lib/script/` client wiring (`defaultAnthropic` already exists)
+- `worker/index.ts` — BullMQ Worker/Queue + concrete Prisma `JobStore`
+- a composition root that builds `PipelinePorts` from all the above + an integration smoke test
 
 ## Definition of done per interval
 
