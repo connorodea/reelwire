@@ -1,0 +1,282 @@
+// Reelwire — automated YouTube channel from live news
+// Pipeline: news ingest → story rank → script → tts → render → upload
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Tenancy ─────────────────────────────────────────────────────────────────
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      Plan     @default(TRIAL)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  channels Channel[]
+  apiKeys  ApiKey[]
+}
+
+enum Plan {
+  TRIAL
+  STARTER
+  PRO
+  AGENCY
+}
+
+model User {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email        String   @unique
+  passwordHash String?
+  role         UserRole @default(MEMBER)
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  hash      String    @unique
+  lastUsed  DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId])
+}
+
+// ─── Channels ────────────────────────────────────────────────────────────────
+
+model Channel {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  niche           Niche
+  language        String   @default("en")
+  region          String   @default("US")
+  voiceId         String   @default("aura-asteria-en") // Deepgram Aura voice
+  personaPrompt   String   @db.Text // system-prompt fragment describing channel voice
+  ctaSnippet      String?  @db.Text // cross-promo CTA (URL + copy) injected into outro/desc
+  postsPerDay     Int      @default(3)
+  postingWindows  Json     @default("[\"08:00\", \"12:00\", \"18:00\"]")
+  format          Format   @default(VERTICAL_9_16)
+  active          Boolean  @default(true)
+  youtubeChannelId String?
+  youtubeRefreshToken String? // encrypted at rest in app layer
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  stories  Story[]
+  scripts  Script[]
+  jobs     Job[]
+  uploads  Upload[]
+
+  @@index([tenantId, active])
+}
+
+enum Niche {
+  TECH
+  AI
+  CRYPTO
+  FINANCE
+  SPORTS
+  GAMING
+  TRUE_CRIME
+  POLITICS
+  ENTERTAINMENT
+  WORLD
+  CUSTOM
+}
+
+enum Format {
+  VERTICAL_9_16  // YouTube Shorts / TikTok / Reels
+  HORIZONTAL_16_9 // YouTube long-form
+  SQUARE_1_1
+}
+
+// ─── Stories (ingested from scrape.do Google News) ───────────────────────────
+
+model Story {
+  id            String   @id @default(cuid())
+  channelId     String
+  channel       Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  // dedupe anchor — sha256(canonicalUrl || title)
+  hash          String
+  title         String
+  snippet       String?  @db.Text
+  sourceName    String?
+  sourceUrl     String   @db.Text
+  publishedAt   DateTime?
+  imageUrl      String?  @db.Text
+  // ranker output
+  noveltyScore  Float?
+  viralityScore Float?
+  nicheFitScore Float?
+  totalScore    Float?
+  selected      Boolean  @default(false)
+  // pipeline state
+  fetchedAt     DateTime @default(now())
+  rawPayload    Json
+
+  scripts Script[]
+
+  @@unique([channelId, hash])
+  @@index([channelId, totalScore])
+  @@index([channelId, selected, fetchedAt])
+}
+
+// ─── Scripts (Claude-generated) ──────────────────────────────────────────────
+
+model Script {
+  id         String   @id @default(cuid())
+  storyId    String
+  story      Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  channelId  String
+  channel    Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  hook       String   @db.Text // first 8s
+  body       Json     // [{ text, brollKeywords[] }]
+  cta        String?  @db.Text
+  thumbnailPrompt String? @db.Text
+  videoTitle String
+  videoDesc  String   @db.Text
+  videoTags  String[] @default([])
+  model      String   @default("claude-sonnet-4-6")
+  tokensIn   Int?
+  tokensOut  Int?
+  createdAt  DateTime @default(now())
+
+  job Job?
+
+  @@index([channelId, createdAt])
+}
+
+// ─── Jobs (queue rows that mirror BullMQ jobs) ───────────────────────────────
+
+model Job {
+  id          String     @id @default(cuid())
+  channelId   String
+  channel     Channel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  scriptId    String?    @unique
+  script      Script?    @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+  kind        JobKind
+  status      JobStatus  @default(QUEUED)
+  attempt     Int        @default(0)
+  errorMessage String?   @db.Text
+  payload     Json
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime   @default(now())
+
+  render Render?
+  upload Upload?
+
+  @@index([channelId, status, createdAt])
+  @@index([status, createdAt])
+}
+
+enum JobKind {
+  INGEST
+  RANK
+  SCRIPT
+  TTS
+  RENDER
+  UPLOAD
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
+  CANCELLED
+}
+
+// ─── Render artifacts ────────────────────────────────────────────────────────
+
+model Render {
+  id          String   @id @default(cuid())
+  jobId       String   @unique
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  durationMs  Int
+  audioUrl    String   @db.Text
+  videoUrl    String   @db.Text
+  thumbnailUrl String? @db.Text
+  costCents   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  upload Upload?
+}
+
+// ─── YouTube uploads ─────────────────────────────────────────────────────────
+
+model Upload {
+  id           String       @id @default(cuid())
+  jobId        String       @unique
+  job          Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  renderId     String       @unique
+  render       Render       @relation(fields: [renderId], references: [id], onDelete: Cascade)
+  channelId    String
+  channel      Channel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  youtubeVideoId String?    @unique
+  status       UploadStatus @default(QUEUED)
+  publishAt    DateTime?
+  publishedAt  DateTime?
+  errorMessage String?      @db.Text
+  createdAt    DateTime     @default(now())
+
+  analytics AnalyticsSnapshot[]
+
+  @@index([channelId, status])
+}
+
+enum UploadStatus {
+  QUEUED
+  UPLOADING
+  PROCESSING
+  PUBLISHED
+  FAILED
+}
+
+// ─── Analytics (pulled daily from YouTube Analytics API) ─────────────────────
+
+model AnalyticsSnapshot {
+  id         String   @id @default(cuid())
+  uploadId   String
+  upload     Upload   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  capturedAt DateTime @default(now())
+  views      Int      @default(0)
+  likes      Int      @default(0)
+  comments   Int      @default(0)
+  ctr        Float?
+  avgViewDurationSec Int?
+  estimatedRevenueCents Int?
+
+  @@index([uploadId, capturedAt])
+}
+
+// ─── System settings (kill switches, spend caps) ─────────────────────────────
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
