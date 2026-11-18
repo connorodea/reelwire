@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "worker": "tsx worker/index.ts",
     "worker:prod": "node --import tsx worker/index.ts",
     "remotion:studio": "remotion studio remotion/index.ts",
@@ -23,6 +24,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",
+    "@aws-sdk/client-s3": "^3.1073.0",
+    "@aws-sdk/s3-request-presigner": "^3.1073.0",
     "@deepgram/sdk": "^5.3.0",
     "@prisma/client": "^5.22.0",
     "@remotion/bundler": "^4.0.225",
@@ -44,13 +47,14 @@
     "@types/node": "^22.10.5",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "@vitest/expect": "^4.1.7",
+    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/expect": "^4.1.9",
     "eslint": "^9.18.0",
     "eslint-config-next": "14.2.35",
     "prisma": "^5.22.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   },
   "engines": {
     "node": ">=20"
